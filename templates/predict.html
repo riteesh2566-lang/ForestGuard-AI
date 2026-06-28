@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fire Risk Prediction</title>
+
+    <!-- Leaflet Map CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <!-- Geocoder CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+    />
+
+    <style>
+      body {
+        background: radial-gradient(circle at top left, #0b1220, #0e1426);
+        color: var(--text-main);
+        font-family: "Poppins", system-ui, Arial, sans-serif;
+        margin: 0;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .main-wrapper {
+        display: flex;
+        height: 100vh;
+        width: 100%;
+      }
+
+      #map-section {
+        flex: 3;
+        position: relative;
+      }
+
+      #map {
+        height: 100%;
+        width: 100%;
+        border-radius: 0;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.7);
+        border: 1.5px solid rgba(148, 163, 184, 0.35);
+      }
+
+      #right-panel {
+        flex: 1;
+        padding: 20px 15px;
+        overflow-y: auto;
+        background: radial-gradient(
+            circle at top left,
+            rgba(56, 189, 248, 0.15),
+            transparent 70%
+          ),
+          linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
+        border-left: 2px solid rgba(30, 41, 59, 0.8);
+        border-radius: 0 18px 18px 0;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.9);
+        color: var(--text-main);
+      }
+
+      #right-panel h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+
+      #locationName {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--accent-strong);
+        margin-bottom: 20px;
+      }
+
+      .weather-card {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+      }
+
+      .weather-card div {
+        background: radial-gradient(
+            circle at top left,
+            rgba(56, 189, 248, 0.18),
+            transparent 55%
+          ),
+          linear-gradient(
+            135deg,
+            rgba(15, 23, 42, 0.98),
+            rgba(15, 23, 42, 0.93)
+          );
+        box-shadow: 0 12px 38px rgba(15, 23, 42, 0.7);
+        border-radius: 18px;
+        border: 1.5px solid rgba(148, 163, 184, 0.35);
+        padding: 15px 0;
+        text-align: center;
+        color: var(--text-main);
+        font-weight: 600;
+      }
+
+      .weather-card h3 {
+        margin: 0 0 8px 0;
+        font-weight: 700;
+      }
+
+      .weather-card p {
+        margin: 0;
+        font-size: 1.2rem;
+        color: var(--accent-strong);
+        font-weight: 600;
+      }
+
+      #prediction {
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin-top: 25px;
+      }
+
+      #firePopup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--danger);
+        padding: 2rem 2.5rem;
+        border-radius: 22px;
+        box-shadow: 0 0 32px var(--danger);
+        text-align: center;
+        font-weight: 900;
+        font-size: 1.6rem;
+        color: red;
+        z-index: 99999;
+        backdrop-filter: blur(14px);
+      }
+
+      #firePopup button {
+        margin-top: 1.5rem;
+        padding: 0.75rem 2rem;
+        background: white;
+        color: var(--danger);
+        font-weight: 700;
+        font-size: 1.3rem;
+        border-radius: 14px;
+        border: none;
+        cursor: pointer;
+        transition: background 0.3s ease, color 0.3s ease;
+      }
+
+      #firePopup button:hover {
+        background: var(--danger);
+        color: red;
+      }
+
+      /* Search box styling */
+      #searchContainer {
+        position: absolute;
+        top: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 520px;
+        z-index: 10000;
+      }
+
+      #searchContainer > div {
+        position: relative;
+        background: white;
+        border-radius: 30px;
+        padding: 12px 45px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+      }
+
+      #searchContainer span {
+        position: absolute;
+        font-size: 20px;
+        color: #888;
+      }
+
+      #searchContainer span:first-child {
+        left: 15px;
+      }
+
+      #searchContainer span:last-child {
+        right: 15px;
+        cursor: pointer;
+      }
+
+      #locationSearch {
+        width: 100%;
+        border: none;
+        outline: none;
+        font-size: 17px;
+        padding-left: 35px;
+        font-weight: 500;
+        color: #222;
+        background: transparent;
+      }
+
+      #suggestionsBox {
+        display: none;
+        background: white;
+        color: black;
+        margin-top: 5px;
+        border-radius: 12px;
+        padding: 6px 10px;
+        max-height: 250px;
+        overflow-y: auto;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+
+      #suggestionsBox div {
+        padding: 10px 8px;
+        border-bottom: 1px solid #ddd;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      #suggestionsBox div:hover {
+        background: var(--accent-soft);
+      }
+
+      @media (max-width: 768px) {
+        .main-wrapper {
+          flex-direction: column;
+        }
+
+        #map-section,
+        #right-panel {
+          height: 50vh;
+        }
+      }
+      h1,
+      h2,
+      h3,
+      .weather-card > div p,
+      #prediction,
+      #locationName {
+        color: #fff !important; /* strong accent for best readability */
+        text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7); /* improves pop */
+      }
+
+      .weather-card > div {
+        background: rgba(
+          15,
+          23,
+          42,
+          0.92
+        ); /* less transparent for better contrast */
+        border: 1.5px solid rgba(56, 189, 248, 0.3);
+      }
+
+      #right-panel {
+        color: #fff;
+      }
+
+      #prediction {
+        color: #ef4444 !important;
+        font-weight: 900;
+        text-shadow: 0px 4px 16px rgba(0, 0, 0, 0.75);
+      }
+      .back-btn{
+    position:fixed;
+    top:20px;
+    left:20px;
+    z-index:99999;
+
+    padding:10px 18px;
+
+    background:rgba(15,23,42,0.75);
+    backdrop-filter:blur(10px);
+
+    color:#fff;
+    text-decoration:none;
+
+    font-size:16px;
+    font-weight:600;
+
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:12px;
+
+    box-shadow:0 4px 18px rgba(0,0,0,0.35);
+
+    transition:0.3s ease;
+}
+
+.back-btn:hover{
+    background:rgba(239,68,68,0.9);
+    transform:translateY(-2px);
+}
+    </style>
+  </head>
+
+  <body>
+    <a href="/" class="back-btn">← Back to Home</a>
+    <div class="main-wrapper">
+      <!-- LEFT MAP -->
+      <div id="map-section">
+        <div id="searchContainer">
+          <div>
+            <span>🔍</span>
+            <input
+              type="text"
+              id="locationSearch"
+              placeholder="Search location..."
+              onkeyup="searchSuggestions()"
+            />
+            <span onclick="clearSearch()">❌</span>
+          </div>
+          <div id="suggestionsBox"></div>
+        </div>
+
+        <div id="map"></div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div id="right-panel">
+        <h1>🔥 Fire Risk Prediction</h1>
+        <p id="locationName" style="font-size: 20px; font-weight: 600">
+          Loading Location...
+        </p>
+
+        <div class="weather-card">
+          <div>
+            <h3>🌡 Temp</h3>
+            <p id="temperature">--</p>
+          </div>
+          <div>
+            <h3>💧 Humidity</h3>
+            <p id="humidity">--</p>
+          </div>
+          <div>
+            <h3>🌬 Wind</h3>
+            <p id="windspeed">--</p>
+          </div>
+          <div>
+            <h3>🌧 Rain</h3>
+            <p id="rain">--</p>
+          </div>
+          <div>
+            <h3>🔥 Drought</h3>
+            <p id="drought">--</p>
+          </div>
+        </div>
+
+        <h2 id="prediction" style="margin-top: 25px; font-size: 25px">
+          Predicting...
+        </h2>
+      </div>
+    </div>
+
+    <!-- Fire Popup + Audio -->
+    <audio id="fireAlarm" src="/static/sounds/alert.mp3" loop></audio>
+    <div id="firePopup">
+      🔥 WARNING: TEMPERATURE ABOVE 30°C!
+      <br /><br />
+      <button onclick="stopAlarm()">I AM ALERTED (STOP ALARM)</button>
+    </div>
+
+    <!-- JS LOGIC (NO CHANGES) -->
+    <!-- Leaflet + Backend Logic REMAINS SAME -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <script>
+      // Backend alert popup
+      {% if alert_sent %}
+      alert("🔥 Fire Risk Alert Sent!\nWhatsApp + Calls Triggered.");
+      {% endif %}
+
+      const defaultLat = 12.371026;
+      const defaultLon = 76.585117;
+      window.userAcknowledged = false;
+
+      let currentLat = defaultLat;
+      let currentLon = defaultLon;
+
+      var map = L.map("map").setView([defaultLat, defaultLon], 14);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(map);
+
+      let currentMarker = L.marker([defaultLat, defaultLon]).addTo(map);
+
+      const circle = L.circle([defaultLat, defaultLon], {
+        radius: 300,
+        color: "red",
+        fillColor: "#ff000055",
+        fillOpacity: 0.3,
+      }).addTo(map);
+
+      window.onload = () => {
+        handleLocationChange(defaultLat, defaultLon);
+      };
+
+      /* Search */
+      function searchSuggestions() {
+        const query = document.getElementById("locationSearch").value.trim();
+        const box = document.getElementById("suggestionsBox");
+
+        if (query.length < 2) {
+          box.style.display = "none";
+          return;
+        }
+
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`)
+          .then((res) => res.json())
+          .then((data) => {
+            box.innerHTML = "";
+            box.style.display = "block";
+
+            data.slice(0, 7).forEach((place) => {
+              const item = document.createElement("div");
+              item.style.padding = "10px";
+              item.style.borderBottom = "1px solid #ddd";
+              item.innerHTML = place.display_name;
+
+              item.onclick = () => {
+                const lat = parseFloat(place.lat);
+                const lon = parseFloat(place.lon);
+
+                currentLat = lat;
+                currentLon = lon;
+
+                map.setView([lat, lon], 14);
+
+                if (currentMarker) map.removeLayer(currentMarker);
+                currentMarker = L.marker([lat, lon]).addTo(map);
+
+                circle.setLatLng([lat, lon]);
+
+                window.userAcknowledged = false;
+                box.style.display = "none";
+                document.getElementById("locationSearch").value =
+                  place.display_name;
+
+                handleLocationChange(lat, lon);
+              };
+
+              box.appendChild(item);
+            });
+          });
+      }
+
+      function clearSearch() {
+        document.getElementById("locationSearch").value = "";
+        document.getElementById("suggestionsBox").style.display = "none";
+      }
+
+      function stopAlarm() {
+        let audio = document.getElementById("fireAlarm");
+        audio.pause();
+        audio.currentTime = 0;
+        document.getElementById("firePopup").style.display = "none";
+        window.userAcknowledged = true;
+      }
+
+      /* Main Logic */
+      function handleLocationChange(lat, lon) {
+        currentLat = lat;
+        currentLon = lon;
+
+        fetch(`/reverse_geocode?lat=${lat}&lon=${lon}`)
+          .then((res) => res.json())
+          .then((loc) => {
+            document.getElementById("locationName").innerText = "📍 " + loc.name;
+          });
+
+        fetch(`/get_weather?lat=${lat}&lon=${lon}`)
+          .then((res) => res.json())
+          .then((weather) => {
+            document.getElementById("temperature").innerHTML =
+              weather.temperature + "°C";
+            document.getElementById("humidity").innerHTML =
+              weather.humidity + "%";
+            document.getElementById("windspeed").innerHTML =
+              weather.wind + " km/h";
+            document.getElementById("rain").innerHTML = weather.rain || 0;
+            document.getElementById("drought").innerHTML = weather.drought || 0;
+
+            // 🔥 FRONTEND FIRE CHECK
+            if (weather.temperature > 30) {
+              if (!window.userAcknowledged) {
+                // Alarm sound + popup
+                document.getElementById("fireAlarm").play();
+                document.getElementById("firePopup").style.display = "block";
+
+                // 🔥 Trigger backend WhatsApp + Call
+                fetch("/trigger_alert", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    lat: currentLat,
+                    lon: currentLon,
+                    temp: weather.temperature,
+                  }),
+                })
+                  .then((r) => r.json())
+                  .then((d) => {
+                    console.log("Backend:", d.status);
+                  });
+              }
+            }
+
+            return weather;
+          })
+          .then((weather) => {
+            let predEl = document.getElementById("prediction");
+
+            if (weather.temperature > 30) {
+              predEl.innerHTML = "🔥 FIRE RISK: TEMP ABOVE 30°C";
+              predEl.style.color = "red";
+            } else {
+              predEl.innerHTML = "🟢 SAFE AREA: NO FIRE";
+              predEl.style.color = "lightgreen";
+            }
+          })
+          .catch(console.error);
+      }
+    </script>
+  </body>
+</html>

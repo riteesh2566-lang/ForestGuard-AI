@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Forest Fire • Detect & Predict</title>
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <!-- Your stylesheet (no change to path) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <!-- --- SLIDE TRANSITION ANIMATION --- -->
+    <style>
+        body {
+            transition: background 0.4s;
+        }
+
+        .page-slideout {
+            animation: pageSlideOutLeft 0.5s cubic-bezier(.68, .11, .31, .97) forwards;
+            will-change: opacity, transform, filter;
+        }
+
+        @keyframes pageSlideOutLeft {
+            0% {
+                opacity: 1;
+                transform: scale(1) translateX(0);
+                filter: blur(0);
+            }
+
+            60% {
+                opacity: 0.7;
+                filter: blur(12px);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0.96) translateX(-80vw);
+                filter: blur(22px);
+            }
+        }
+    </style>
+</head>
+
+<body class="page-root">
+    {% set active_page = 'home' %}
+
+    <!-- Navbar -->
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="/" class="navbar-brand">
+                <div class="brand-mark"><span>FF</span></div>
+                <div>
+                    <div class="brand-text-title">Forest Fire AI</div>
+                    <div class="brand-text-sub">Detection & Prediction</div>
+                </div>
+            </a>
+            <nav class="nav-links">
+                <a href="/" class="nav-link active">Home</a>
+                <a href="{{ url_for('live') }}" class="nav-link">Webcam</a>
+                <a href="/predict" class="nav-link">Weather</a>
+                <a href="/satellite" class="nav-link">Satellite</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Optional global loader (not required on index, but ready if you want to reuse) -->
+    <div id="global-loading-overlay" class="loading-overlay">
+        <div class="loader-card">
+            <div class="loader-spinner"></div>
+            <div class="chip">
+                <span class="chip-dot"></span>
+                Model running inference…
+            </div>
+            <div class="loader-bar"></div>
+            <div class="field-helper">
+                This may take a few seconds depending on input size.
+            </div>
+        </div>
+    </div>
+
+    <main class="main-shell">
+        <section class="hero-layout">
+            <div class="surface">
+                <div class="hero-tags">
+                    <span class="badge-soft">
+                        <span class="chip-dot"></span>
+                        MCA Final Year Project
+                    </span>
+                    <span class="badge-soft">
+                        AI-powered early fire warning
+                    </span>
+                </div>
+
+                <h1 class="h1">Forest Fire Detection & Prediction</h1>
+                <p class="hero-subtitle">
+                    Use webcam, satellite, or weather data to detect or predict forest fires in real time.
+                </p>
+
+                <div style="margin-top: 1.2rem; display: flex; flex-wrap: wrap; gap: 0.6rem;">
+                    <a class="btn btn-primary" href="/predict">
+                        <span class="icon">🌦</span>
+                        Open Prediction
+                    </a>
+                    <a class="btn btn-outline" href="{{ url_for('live') }}">
+                        <span class="icon">📹</span>
+                        Start Live
+                    </a>
+                    <a class="btn btn-ghost" href="/satellite">
+                        <span class="icon">🛰</span>
+                        Satellite View
+                    </a>
+                </div>
+
+                <div class="mini-metrics">
+                    <div class="mini-metrics-item">
+                        <span class="metric-label">Inputs</span> · Webcam · Weather · Satellite
+                    </div>
+                    <div class="mini-metrics-item">
+                        <span class="metric-label">Backend</span> · Flask + ML models
+                    </div>
+                </div>
+            </div>
+
+            <aside class="surface-soft">
+                <div class="section-heading-row">
+                    <h2 class="h2">Quick actions</h2>
+                    <span class="field-helper">Choose how you want to start.</span>
+                </div>
+
+                <!-- 🔥 Prediction Section -->
+                <div class="tile" style="margin-top: 0.9rem;" onclick="window.location.href='/predict'">
+                    <div class="tile-header">
+                        <div>
+                            <div class="tile-title">🌦 Fire Risk Prediction</div>
+                            <div class="field-helper">Analyze fire probability based on weather inputs.</div>
+                        </div>
+                        <div class="tile-icon">🌦</div>
+                    </div>
+                    <div class="tile-footer">
+                        <span>Tabular input</span>
+                        <span>Risk score</span>
+                    </div>
+                </div>
+
+                <!-- 📹 Live Camera Section -->
+                <div class="tile" style="margin-top: 0.9rem;" onclick="window.location.href='/live'">
+                    <div class="tile-header">
+                        <div>
+                            <div class="tile-title">📹 Live Camera</div>
+                            <div class="field-helper">Detect fire through webcam or IP camera.</div>
+                        </div>
+                        <div class="tile-icon">📷</div>
+                    </div>
+                    <div class="tile-footer">
+                        <span>Real-time stream</span>
+                        <span>Smoke & flame</span>
+                    </div>
+                </div>
+
+                <!-- 🛰 Satellite Monitoring -->
+                <div class="tile" style="margin-top: 0.9rem;" onclick="window.location.href='/satellite'">
+                    <div class="tile-header">
+                        <div>
+                            <div class="tile-title">🛰 Satellite Monitoring</div>
+                            <div class="field-helper">
+                                View NASA real-time fire hotspots & satellite risk analysis.
+                            </div>
+                        </div>
+                        <div class="tile-icon">🛰</div>
+                    </div>
+                    <div class="tile-footer">
+                        <span>Global coverage</span>
+                        <span>Hotspot layers</span>
+                    </div>
+                </div>
+
+                <p class="field-helper" style="margin-top: 1.1rem; text-align: center;">
+                    Built for MCA Final Year Project.
+                </p>
+            </aside>
+        </section>
+    </main>
+
+    <footer class="footer">
+        Forest Fire • Detect & Predict · MCA Final Year Project
+    </footer>
+
+    <!-- Animated Slide Transitions for Tiles/Pages -->
+    <script>
+        document.querySelectorAll('.tile').forEach(tile => {
+            tile.addEventListener('click', function (e) {
+                // Allow normal link opens on middle-click/new tab etc.
+                if (e.ctrlKey || e.metaKey) return;
+                e.preventDefault();
+                let onClickAttr = tile.getAttribute('onclick');
+                let link = onClickAttr ? onClickAttr.replace("window.location.href=", "").replace(/'/g, "") : null;
+                if (link) {
+                    document.body.classList.add('page-slideout');
+                    setTimeout(function () { window.location.href = link; }, 500);
+                }
+            });
+        });
+    </script>
+    <script>
+        // Loader code remains untouched
+        document.addEventListener('DOMContentLoaded', () => {
+            const forms = document.querySelectorAll('form[data-loading="prediction"]');
+            const overlay = document.getElementById('global-loading-overlay');
+            forms.forEach(form => {
+                form.addEventListener('submit', () => {
+                    if (overlay) overlay.classList.add('active');
+                    form.classList.add('form-loading');
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

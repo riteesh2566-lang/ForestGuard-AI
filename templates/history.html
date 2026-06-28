@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Recording History</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+
+    <style>
+        body {
+            background: radial-gradient(circle at top left, #0b1220, #0e1426);
+            color: var(--text-main);
+            font-family: "Poppins", system-ui, sans-serif;
+            margin: 80px 12px 40px;
+            text-align: center;
+        }
+
+        a.back {
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            color: var(--accent-strong);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 8px 12px;
+            background: rgba(15, 23, 42, 0.85);
+            border-radius: 999px;
+            border: 1.5px solid var(--accent-soft);
+            box-shadow: 0 5px 15px rgba(56, 189, 248, 0.35);
+            transition: background 0.3s ease, color 0.3s ease;
+            z-index: 20;
+        }
+
+        a.back:hover {
+            background: var(--accent-strong);
+            color: #0f172a;
+        }
+
+        h1 {
+            font-weight: 600;
+            font-size: clamp(1.8rem, 4vw, 2.4rem);
+            margin-bottom: 1.4rem;
+        }
+
+        .recording {
+            max-width: 720px;
+            margin: 1rem auto;
+            background: radial-gradient(circle at top left, var(--accent-soft), transparent 70%),
+                radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.12), transparent 75%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.88));
+            border-radius: 18px;
+            padding: 1.4rem 1.8rem;
+            border: 1.5px solid var(--glass-border);
+            box-shadow: 0 18px 48px rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(18px);
+            color: var(--text-main);
+            text-align: left;
+        }
+
+        .time {
+            font-size: 0.83rem;
+            line-height: 1.3;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 14px;
+            box-shadow: 0 15px 45px rgba(15, 23, 42, 0.7);
+            border: 1.5px solid var(--accent-soft);
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.5rem 1.15rem;
+            border-radius: 999px;
+            border: none;
+            margin-right: 0.7rem;
+            user-select: none;
+            transition: all 0.22s ease;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, var(--accent-strong), var(--success));
+            color: #0f172a;
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.45);
+        }
+
+        .btn-download:hover {
+            box-shadow: 0 18px 40px rgba(34, 197, 94, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-delete {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-delete:hover {
+            box-shadow: 0 20px 50px rgba(239, 68, 68, 0.7);
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+
+<body>
+    <a href="{{ url_for('live') }}" class="back">⬅ Back to Live</a>
+
+    <h1>📁 Recording History</h1>
+
+    {% if recordings %}
+    {% for rec in recordings %}
+    <div class="recording">
+        <div class="time">
+            📷 Camera: {{ rec.camera }} <br />
+            🕒 Recorded at: {{ rec.timestamp }}
+        </div>
+
+        <video controls>
+            <source src="{{ url_for('get_recording', filename=rec.filename.replace('.avi', '.mp4')) }}"
+                type="video/mp4" />
+            Your browser does not support the video tag.
+        </video>
+
+        <a href="{{ url_for('get_recording', filename=rec.filename) }}" download>
+            <button class="btn btn-download" type="button">⬇ Download</button>
+        </a>
+
+        <form action="{{ url_for('delete_recording_route', record_id=rec._id) }}" method="POST" style="display:inline;">
+            <button class="btn btn-delete" type="submit" onclick="return confirm('Are you sure?')">🗑 Delete</button>
+        </form>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>No recordings found yet.</p>
+    {% endif %}
+</body>
+
+</html>

@@ -1,0 +1,7 @@
+<nav>
+    <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+    <a href="/predict" class="{% if request.path == '/predict' %}active{% endif %}">Prediction</a>
+    <a href="{{ url_for('live') }}" class="{% if request.path == '/live' %}active{% endif %}">Webcam Detection</a>
+    <a href="/satellite" class="{% if request.path == '/satellite' %}active{% endif %}">Satellite View</a>
+    <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">Dashboard</a>
+</nav>

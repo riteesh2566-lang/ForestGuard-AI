@@ -1,0 +1,9 @@
+.venv/
+tfenv/
+__pycache__/
+recordings/
+.env
+*.pyc
+*.h5
+*.pkl
+static/satellite_dataset/

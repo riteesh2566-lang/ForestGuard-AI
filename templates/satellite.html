@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Satellite AI Fire Detection</title>
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #searchBox {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px gray;
+            width: 300px;
+            z-index: 1000;
+        }
+
+        /* Loader Animation */
+        #loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        /* Popup Animation */
+        .popup-animate {
+            animation: popIn 0.5s ease-in-out;
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .back-btn{
+    position:fixed;
+    top:20px;
+    left:20px;
+    z-index:99999;
+
+    padding:10px 18px;
+
+    background:rgba(15,23,42,0.75);
+    backdrop-filter:blur(10px);
+
+    color:#fff;
+    text-decoration:none;
+
+    font-size:16px;
+    font-weight:600;
+
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:12px;
+
+    box-shadow:0 4px 18px rgba(0,0,0,0.35);
+
+    transition:0.3s ease;
+}
+
+.back-btn:hover{
+    background:rgba(239,68,68,0.9);
+    transform:translateY(-2px);
+}
+    </style>
+</head>
+
+<body>
+    <a href="/" class="back-btn">← Back to Home</a>
+
+    <input type="text" id="searchBox" placeholder="Search location...">
+    <div id="loader">⏳ Processing with AI...</div>
+    <div id="map"></div>
+
+    <script>
+        // INIT MAP
+        let map = L.map('map').setView([20.5937, 78.9629], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // 🔥 CUSTOM FIRE ICON
+        const fireIcon = L.divIcon({
+            html: '🔥',
+            className: '',
+            iconSize: [200, 200]
+        });
+
+        // 🛠️ NEW: ARRAY TO STORE MARKERS (THIS IS THE FIX)
+        let fireMarkers = [];
+
+        // 🔥 PREDEFINED FIRE LOCATIONS (DO NOT CHANGE)
+        let fireLocations = [
+            [11.6617, 76.6272],
+            [12.0417, 76.1320],
+            [11.6000, 76.5500],
+            [11.6795, 76.3788],
+            [21.8330, 86.3330],
+            [19.1660, 83.4160],
+            [18.2500, 81.9500],
+            [20.1824, 80.0032],
+            [30.1529, 78.7771],
+            [23.8000, 86.4000],
+            [23.7300, 92.7200],
+            [26.9500, 94.1000],
+        ];
+
+        // 🔥 ADD FIRE MARKERS WITH ICON (YOUR ORIGINAL CODE)
+        fireLocations.forEach((loc) => {
+            let marker = L.marker(loc, { icon: fireIcon }).addTo(map);
+            fireMarkers.push(marker);  // 👉 Added this only
+            marker.on("click", () => {
+                getImageAndPredict("/get_wildfire_image", loc[0], loc[1]);
+            });
+        });
+
+        // 🟢 ANYWHERE CLICK → NON-WILDFIRE
+        map.on("click", function (e) {
+            getImageAndPredict("/get_nonwildfire_image", e.latlng.lat, e.latlng.lng);
+        });
+
+        // 🔄 FIX: UPDATE ICON PROPERLY ON ZOOM
+        map.on('zoomend', function () {
+            let zoom = map.getZoom();
+
+            let size = zoom < 6 ? 40 :
+                zoom < 8 ? 60 :
+                    zoom < 10 ? 80 : 120;
+
+            fireIcon.options.iconSize = [size, size];
+            fireIcon.options.iconAnchor = [size / 2, size / 2];
+
+            // 👇 RE-APPLY ICON TO EVERY MARKER
+            fireMarkers.forEach(marker => {
+                marker.setIcon(fireIcon);
+            });
+        });
+
+        // ⏳ GET IMAGE & SEND TO ML
+        function getImageAndPredict(api, lat, lon) {
+            showLoader(true);
+            fetch(api)
+                .then(res => res.json())
+                .then(data => {
+                    sendToML(data.image, lat, lon);
+                });
+        }
+
+        // 📡 SEND TO ML API
+        function sendToML(img, lat, lon) {
+            fetch("/predict_satellite", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: img })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    showLoader(false);
+                    openResultPopup(lat, lon, img, data.result, data.confidence);
+                });
+        }
+
+        // 🧠 SHOW RESULT WITH IMAGE + CONFIDENCE
+        function openResultPopup(lat, lon, img, result, confidence) {
+            let color = result.includes("Fire") ? "red" : "green";
+
+            L.popup({ className: 'popup-animate' })
+                .setLatLng([lat, lon])
+                .setContent(`
+            <h3 style="color:${color}; margin:0; padding:0;">${result}</h3>
+            <p style="margin:5px 0;">Confidence: <b>${confidence}%</b></p>
+            <img src="${img}" width="200" style="border-radius:8px;">
+        `)
+                .openOn(map);
+        }
+
+        // 🔍 SEARCH LOCATION ENTER KEY
+        document.getElementById("searchBox").addEventListener("keydown", function (e) {
+            if (e.key === "Enter") searchLocation();
+        });
+
+        function searchLocation() {
+            let query = document.getElementById("searchBox").value;
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        map.setView([data[0].lat, data[0].lon], 10);
+                    } else alert("Location not found");
+                });
+        }
+
+        // 📌 LOADING INDICATOR
+        function showLoader(status) {
+            document.getElementById("loader").style.display = status ? "block" : "none";
+        }
+    </script>
+
+</body>
+
+</html>

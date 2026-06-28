@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Live Camera Fire Detection</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- Your external stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+
+    <style>
+        /* Fire Popup Glassmorphism */
+        #firePopup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            padding: 1.6rem 2rem;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 77, 77, 0.8);
+            z-index: 9999;
+            font-size: 1.15rem;
+            font-weight: 600;
+            background:
+                linear-gradient(135deg, rgba(255, 77, 77, 0.9), rgba(217, 38, 38, 0.85));
+            backdrop-filter: blur(14px);
+            border: 1.5px solid rgba(255, 77, 77, 0.4);
+        }
+
+        #stopBtn {
+            margin-top: 0.8rem;
+            padding: 0.6rem 1.3rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            background: white;
+            color: #dc2626;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        #stopBtn:hover {
+            background: #dc2626;
+            color: white;
+        }
+
+        /* Container and Card */
+        .container {
+            max-width: 720px;
+            margin: 80px auto 40px;
+            padding: 0 1.25rem;
+        }
+
+        .card {
+            background:
+                radial-gradient(circle at top left, rgba(56, 189, 248, 0.15), transparent 60%),
+                radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.12), transparent 70%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.97), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 18px;
+            box-shadow: 0 15px 50px rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(18px);
+            padding: 1.6rem 1.6rem 2rem;
+            color: var(--text-main);
+        }
+
+        .card h1,
+        .card h2 {
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        /* Form styles */
+        form label {
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+            display: block;
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+
+        form select,
+        form input[type="number"],
+        form input[type="text"] {
+            width: 100%;
+            padding: 0.55rem 0.8rem;
+            border-radius: 999px;
+            border: 1.5px solid rgba(148, 163, 184, 0.45);
+            background: rgba(15, 23, 42, 0.85);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            margin-bottom: 1rem;
+        }
+
+        form select:focus,
+        form input[type="number"]:focus,
+        form input[type="text"]:focus {
+            border-color: var(--accent-strong);
+            box-shadow: 0 0 15px var(--accent-strong);
+        }
+
+        /* Two-column grid for inputs */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Buttons */
+        button[type="submit"],
+        #historyBtn,
+        #backBtn,
+        #stopCamBtn {
+            background: linear-gradient(135deg, var(--accent-strong), var(--success));
+            border: none;
+            border-radius: 999px;
+            padding: 0.55rem 1.3rem;
+            color: #0f172a;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 12px 35px rgba(34, 197, 94, 0.45);
+            transition: transform 0.17s ease, box-shadow 0.3s ease;
+            user-select: none;
+            margin: 0.3rem 0.5rem 0.7rem 0;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
+        button[type="submit"]:hover,
+        #historyBtn:hover,
+        #backBtn:hover,
+        #stopCamBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 50px rgba(34, 197, 94, 0.65);
+        }
+
+        /* Anchor buttons */
+        a>button {
+            display: inline-block;
+            width: auto;
+        }
+
+        /* Live feed card */
+        .card img {
+            border-radius: 14px;
+            max-width: 100%;
+            display: block;
+            margin-top: 1rem;
+            box-shadow: 0 15px 45px rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Fire popup (unchanged) -->
+    <div id="firePopup">
+        🔥 FIRE DETECTED!
+        <br /><br />
+        <button id="stopBtn" onclick="stopAlarm()">I AM ALERTED (STOP)</button>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>🔥 Live Camera Fire Detection</h1>
+
+            <form method="POST" data-loading="prediction">
+                <label for="source_type">Choose Camera Type</label>
+                <select id="source_type" name="source_type" required>
+                    <option value="webcam">Laptop Webcam (0)</option>
+                    <option value="url">IP Camera / RTSP / HTTP URL</option>
+                </select>
+
+                <div class="grid-2">
+                    <div>
+                        <label for="cam_index">Webcam Index</label>
+                        <input type="number" id="cam_index" name="cam_index" value="0" min="0" />
+                    </div>
+                    <div>
+                        <label for="cam_url">Camera URL</label>
+                        <input type="text" id="cam_url" name="cam_url" placeholder="rtsp://..." autocomplete="off" />
+                    </div>
+                </div>
+
+                <button type="submit">Start Camera</button>
+            </form>
+
+            <a href="{{ url_for('history_page') }}">
+                <button id="historyBtn" type="button">📁 View Recording History</button>
+            </a>
+
+            <a href="{{ url_for('index') }}">
+                <button id="backBtn" type="button">⬅ Back to Home</button>
+            </a>
+        </div>
+
+        {% if stream %}
+        <div class="card">
+            <h2>Live Feed</h2>
+            <img src="{{ url_for('live_stream') }}" alt="Live Feed" />
+
+            <a href="{{ url_for('stop_camera_route') }}">
+                <button id="stopCamBtn" type="button">🛑 Stop Camera</button>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Alarm and popup JS unchanged -->
+    <audio id="alarmSound">
+        <source src="{{ url_for('static', filename='sounds/alert.mp3') }}" type="audio/mpeg" />
+    </audio>
+    <script>
+        let audio = document.getElementById("alarmSound");
+        let firePopup = document.getElementById("firePopup");
+        let userAcknowledged = false;
+        let fireActive = false;
+
+        document.addEventListener(
+            "click",
+            () => {
+                audio
+                    .play()
+                    .then(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    })
+                    .catch(console.error);
+            },
+            { once: true }
+        );
+
+        const evt = new EventSource("/live/events");
+        evt.onmessage = function (e) {
+            if (e.data === "ALERT_FIRE" && !userAcknowledged) {
+                fireActive = true;
+                firePopup.style.display = "block";
+                audio.loop = true;
+                audio.play();
+            } else if (e.data === "NOFIRE" && !userAcknowledged) {
+                fireActive = false;
+            }
+        };
+
+        setInterval(() => {
+            if (!fireActive && !userAcknowledged) {
+                if (audio.currentTime > 0 && audio.currentTime >= audio.duration - 0.2) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    firePopup.style.display = "none";
+                }
+            }
+        }, 300);
+
+        function stopAlarm() {
+            userAcknowledged = true;
+            audio.pause();
+            audio.currentTime = 0;
+            firePopup.style.display = "none";
+        }
+    </script>
+</body>
+
+</html>
