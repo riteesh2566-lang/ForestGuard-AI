@@ -152,7 +152,7 @@ python app.py
 
 
 ### 🏠 Home Page
-![Home Page](screenshots/homepage.png)
+![Home Page](screenshots/Homepage.png)
 
 ### 📊 Webcam Page
 ![History](screenshots/Webcampage.png)
