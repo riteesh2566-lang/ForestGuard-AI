@@ -164,7 +164,7 @@ python app.py
 ![Prediction](screenshots/Wheatherprediction.png)
 
 ### 🛰️ Satellite Monitoring
-![Satellite](screenshots/satellitepage.png)
+![Satellite](screenshots/Satellitepage.png)
 
 ### 📊 MessageAlert
 ![History](screenshots/MessageAlert.png)
