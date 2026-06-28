@@ -152,19 +152,22 @@ python app.py
 
 
 ### 🏠 Home Page
-![Home Page](screenshots/home.png)
+![Home Page](screenshots/homepage.png)
+
+### 📊 Webcam Page
+![History](screenshots/Webcampage.png)
 
 ### 🔥 Live Fire Detection
-![Live Detection](screenshots/live_detection.png)
+![Live Detection](screenshots/Firealert.png)
 
-### 🌡️ Fire Prediction
-![Prediction](screenshots/prediction.png)
+### 🌡️ Wheather Prediction
+![Prediction](screenshots/Wheatherprediction.png)
 
 ### 🛰️ Satellite Monitoring
-![Satellite](screenshots/satellite.png)
+![Satellite](screenshots/satellitepage.png)
 
-### 📊 Detection History
-![History](screenshots/history.png)
+### 📊 MessageAlert
+![History](screenshots/MessageAlert.png)
 
 ---
 
