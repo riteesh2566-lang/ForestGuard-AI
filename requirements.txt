@@ -1,14 +1,30 @@
-# requirements
 Flask==3.0.2
-opencv-python==4.9.0.80
+gunicorn==21.2.0
+
+# Computer Vision
+opencv-python-headless==4.9.0.80
+Pillow==10.3.0
+
+# Machine Learning and Data Science
 numpy==1.26.4
 pandas==2.2.1
-joblib==1.3.2
 scikit-learn==1.4.2
+scipy==1.13.0
+joblib==1.3.2
+tensorflow-cpu==2.15.1
+
+# Database
+pymongo==4.7.2
+
+# Notifications
+twilio
+
+# API and Environment
+requests
+python-dotenv
+
+# Flask dependencies
 Werkzeug==3.0.1
 Jinja2==3.1.3
 itsdangerous==2.1.2
 MarkupSafe==2.1.5
-gunicorn==21.2.0
-requests
-python-dotenv
